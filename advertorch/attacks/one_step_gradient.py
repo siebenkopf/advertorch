@@ -155,7 +155,7 @@ class GradientValueAttack(Attack, LabelMixin):
         """
         Create an instance of the GradientAttack.
         """
-        super(GradientAttack, self).__init__(
+        super(GradientValueAttack, self).__init__(
             predict, loss_fn, clip_min, clip_max)
 
         self.eps = eps

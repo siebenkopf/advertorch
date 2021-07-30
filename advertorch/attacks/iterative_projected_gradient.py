@@ -380,7 +380,7 @@ class IterativeFGVAttack(PGDAttack):
         ord = -1
         rand_init = False
         l1_sparsity = None
-        super(LinfBasicIterativeAttack, self).__init__(
+        super(IterativeFGVAttack, self).__init__(
             predict, loss_fn, eps, nb_iter, eps_iter, rand_init,
             clip_min, clip_max, ord, l1_sparsity, targeted)
 

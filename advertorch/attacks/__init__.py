@@ -15,10 +15,12 @@ from .one_step_gradient import GradientAttack
 from .one_step_gradient import GradientSignAttack
 from .one_step_gradient import FGM
 from .one_step_gradient import FGSM
+from .one_step_gradient import FGV
 
 from .iterative_projected_gradient import FastFeatureAttack
 from .iterative_projected_gradient import L2BasicIterativeAttack
 from .iterative_projected_gradient import LinfBasicIterativeAttack
+from .iterative_projected_gradient import IterativeFGVAttack
 from .iterative_projected_gradient import PGDAttack
 from .iterative_projected_gradient import LinfPGDAttack
 from .iterative_projected_gradient import L2PGDAttack
