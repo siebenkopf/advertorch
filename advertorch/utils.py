@@ -303,8 +303,7 @@ def normalize_by_maxabs(x, small_constant=1e-6):
     """
     norm = torch.max(torch.abs(x))
     norm = torch.max(norm, torch.ones_like(norm) * small_constant)
-    return batch_multiply(1. / norm, x)
-
+    return x / norm
 
 
 def jacobian(model, x, output_class):

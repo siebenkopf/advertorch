@@ -183,7 +183,7 @@ class GradientValueAttack(Attack, LabelMixin):
         if self.targeted:
             loss = -loss
         loss.backward()
-        grad = normalize_by_pnorm(xadv.grad)
+        grad = normalize_by_maxabs(xadv.grad)
         xadv = xadv + batch_multiply(self.eps, grad)
         xadv = clamp(xadv, self.clip_min, self.clip_max)
 
