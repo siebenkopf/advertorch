@@ -14,6 +14,7 @@ import torch.nn as nn
 
 from advertorch.utils import clamp
 from advertorch.utils import normalize_by_pnorm
+from advertorch.utils import normalize_by_maxabs
 from advertorch.utils import batch_multiply
 
 from .base import Attack
@@ -125,7 +126,7 @@ class GradientAttack(Attack, LabelMixin):
         if self.targeted:
             loss = -loss
         loss.backward()
-        grad = normalize_by_pnorm(xadv.grad)
+        grad = normalize_by_maxabs(xadv.grad)
         xadv = xadv + batch_multiply(self.eps, grad)
         xadv = clamp(xadv, self.clip_min, self.clip_max)
 
@@ -133,3 +134,60 @@ class GradientAttack(Attack, LabelMixin):
 
 
 FGM = GradientAttack
+
+
+class GradientValueAttack(Attack, LabelMixin):
+    """
+    Perturbs the input with gradient value of the loss wrt the input.
+
+    See paper: https://www.cv-foundation.org/openaccess/content_cvpr_2016_workshops/w12/html/Rozsa_Adversarial_Diversity_and_CVPR_2016_paper.html
+
+    :param predict: forward pass function.
+    :param loss_fn: loss function.
+    :param eps: attack step size.
+    :param clip_min: mininum value per input dimension.
+    :param clip_max: maximum value per input dimension.
+    :param targeted: indicate if this is a targeted attack.
+    """
+
+    def __init__(self, predict, loss_fn=None, eps=0.3,
+                 clip_min=0., clip_max=1., targeted=False):
+        """
+        Create an instance of the GradientAttack.
+        """
+        super(GradientAttack, self).__init__(
+            predict, loss_fn, clip_min, clip_max)
+
+        self.eps = eps
+        self.targeted = targeted
+        if self.loss_fn is None:
+            self.loss_fn = nn.CrossEntropyLoss(reduction="sum")
+
+    def perturb(self, x, y=None):
+        """
+        Given examples (x, y), returns their adversarial counterparts with
+        an attack length of eps.
+
+        :param x: input tensor.
+        :param y: label tensor.
+                  - if None and self.targeted=False, compute y as predicted
+                    labels.
+                  - if self.targeted=True, then y must be the targeted labels.
+        :return: tensor containing perturbed inputs.
+        """
+        x, y = self._verify_and_process_inputs(x, y)
+        xadv = x.requires_grad_()
+        outputs = self.predict(xadv)
+
+        loss = self.loss_fn(outputs, y)
+        if self.targeted:
+            loss = -loss
+        loss.backward()
+        grad = normalize_by_pnorm(xadv.grad)
+        xadv = xadv + batch_multiply(self.eps, grad)
+        xadv = clamp(xadv, self.clip_min, self.clip_max)
+
+        return xadv.detach()
+
+
+FGV = GradientValueAttack

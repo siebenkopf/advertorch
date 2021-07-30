@@ -292,6 +292,21 @@ def normalize_by_pnorm(x, p=2, small_constant=1e-6):
     return batch_multiply(1. / norm, x)
 
 
+def normalize_by_maxabs(x, small_constant=1e-6):
+    """
+    Normalize gradients for gradient value attacks to
+    have values between [-1,1].
+
+    :param x: tensor containing the gradients on the input.
+    :param small_constant: (optional float) to avoid dividing by zero.
+    :return: normalized gradients.
+    """
+    norm = torch.max(torch.abs(x))
+    norm = torch.max(norm, torch.ones_like(norm) * small_constant)
+    return batch_multiply(1. / norm, x)
+
+
+
 def jacobian(model, x, output_class):
     """
     Compute the output_class'th row of a Jacobian matrix. In other words,

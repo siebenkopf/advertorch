@@ -17,6 +17,7 @@ import torch.nn as nn
 
 from advertorch.utils import clamp
 from advertorch.utils import normalize_by_pnorm
+from advertorch.utils import normalize_by_maxabs
 from advertorch.utils import clamp_by_pnorm
 from advertorch.utils import is_float_or_torch_tensor
 from advertorch.utils import batch_multiply
@@ -107,6 +108,14 @@ def perturb_iterative(xvar, yvar, predict, nb_iter, eps, eps_iter, loss_fn,
             delta.data = delta.data.to(xvar.device)
             delta.data = clamp(xvar.data + delta.data, clip_min, clip_max
                                ) - xvar.data
+
+        elif ord == -1:
+            grad = delta.grad.data
+            grad = normalize_by_maxabs(grad)
+            delta.data = delta.data + batch_multiply(eps_iter, grad)
+            delta.data = clamp(xvar.data + delta.data, clip_min, clip_max
+                               ) - xvar.data
+
         else:
             error = "Only ord = inf, ord = 1 and ord = 2 have been implemented"
             raise NotImplementedError(error)
@@ -343,6 +352,32 @@ class LinfBasicIterativeAttack(PGDAttack):
     def __init__(self, predict, loss_fn=None, eps=0.1, nb_iter=10,
                  eps_iter=0.05, clip_min=0., clip_max=1., targeted=False):
         ord = np.inf
+        rand_init = False
+        l1_sparsity = None
+        super(LinfBasicIterativeAttack, self).__init__(
+            predict, loss_fn, eps, nb_iter, eps_iter, rand_init,
+            clip_min, clip_max, ord, l1_sparsity, targeted)
+
+
+class IterativeFGVAttack(PGDAttack):
+    """
+    Like GradientValueAttack but with several steps for each epsilon.
+    See thesis (section 3.3.2): https://mountainscholar.org/bitstream/handle/10976/167056/Rozsa_uccs_0892D_10408.pdf
+
+    :param predict: forward pass function.
+    :param loss_fn: loss function.
+    :param eps: maximum distortion.
+    :param nb_iter: number of iterations.
+    :param eps_iter: attack step size.
+    :param rand_init: (optional bool) random initialization.
+    :param clip_min: mininum value per input dimension.
+    :param clip_max: maximum value per input dimension.
+    :param targeted: if the attack is targeted.
+    """
+
+    def __init__(self, predict, loss_fn=None, eps=0.1, nb_iter=10,
+                 eps_iter=0.05, clip_min=0., clip_max=1., targeted=False):
+        ord = -1
         rand_init = False
         l1_sparsity = None
         super(LinfBasicIterativeAttack, self).__init__(
